@@ -184,6 +184,20 @@ Image3 hw_1_3(const std::vector<std::string> &params) {
                 }
                 else if (auto* rectangle = std::get_if<Rectangle>(&shape)) {
                     // do something with rectangle
+                    const Rectangle& curr_rectangle = *rectangle;
+                       
+                    // Vector2:
+                    //  curr_rectangle.p_min top-left point
+                    //  curr_rectangle.p_max bottom-right point
+                    //
+
+                    bool within_x_bounds = (x > curr_rectangle.p_min.x && x < curr_rectangle.p_max.x);
+                    bool within_y_bounds = (y > curr_rectangle.p_min.y && y < curr_rectangle.p_max.y);
+                    //Real height = curr_rectangle.p_min.y - curr_rectangle.p_max.y;
+                    //Real width = curr_rectangle.p_min.x - curr_rectangle.p_max.x;
+                    if (within_x_bounds && within_y_bounds) {
+                        img(x, y) = curr_rectangle.color;
+                    }
                 }
                 else if (auto* triangle = std::get_if<Triangle>(&shape)) {
                     // do something with triangle
