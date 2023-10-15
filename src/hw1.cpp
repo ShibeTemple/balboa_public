@@ -68,8 +68,6 @@ Image3 hw_1_1(const std::vector<std::string> &params) {
             } else {
                 img(x, y) = base_color;
             }
-
-            
             
         }
     }
@@ -78,6 +76,7 @@ Image3 hw_1_1(const std::vector<std::string> &params) {
 
 Image3 hw_1_2(const std::vector<std::string> &params) {
     // Homework 1.2: render multiple circles
+    // Default, blank return
     if (params.size() == 0) {
         return Image3(0, 0);
     }
@@ -87,9 +86,45 @@ Image3 hw_1_2(const std::vector<std::string> &params) {
 
     Image3 img(scene.resolution.x, scene.resolution.y);
 
+    // draw background
+    // maybe could be time complexity reduced?
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
-            img(x, y) = Vector3{1, 1, 1};
+            img(x, y) = scene.background;
+        }
+    }
+
+
+    // for each pixel
+    //
+    // circles are ordered from the farthest to the closest.
+    for (int y = 0; y < img.height; y++) {
+        for (int x = 0; x < img.width; x++) {
+            // y
+            // x
+            // color
+            
+            // size_t https://en.cppreference.com/w/c/types/size_t
+            for (size_t i = 0; i < scene.objects.size(); ++i) {
+                // Access the circle object within the loop using circle.center, circle.radius, circle.color
+                const Circle& circle = scene.objects[i];
+
+                // Calculate distance from center of circle to current point for every point
+                // https://math.stackexchange.com/a/198769
+                Real pythag_a = pow((circle.center.x - x), 2);
+                Real pythag_b = pow((circle.center.y - y), 2);
+                Real distance_from_center = sqrt((pythag_a + pythag_b));
+
+                // if pixel lands on circle
+                // 
+                // started with <= but moved to < per Figure 5 & Piazza Q@14. 
+                // Difference is drawing 1 extra pixel on circle boundary. See Piazza Q@14 for details.
+                if (distance_from_center < circle.radius) {
+                    img(x, y) = circle.color;
+                }
+            }
+
+
         }
     }
     return img;
