@@ -1,4 +1,4 @@
-#include "hw1.h"
+﻿#include "hw1.h"
 #include "hw1_scenes.h"
 
 
@@ -201,10 +201,78 @@ Image3 hw_1_3(const std::vector<std::string> &params) {
                 }
                 else if (auto* triangle = std::get_if<Triangle>(&shape)) {
                     // do something with triangle
+                    const Triangle& curr_triangle = *triangle;
+
+                    // p0, p1, p2
+
+                    // We can determine whether a point q is on the positive or negative half-planes 
+                    // by looking at the sign of the dot product between a vector formed by the point q 
+                    // and the line, and a normal vector n that is perpendicular to the direction of the line.
+                    //
+
+                    // sign of the dot product between a vector formed by the point q and the line
+                    // a normal vector n that is perpendicular to the direction of the line
+
+                    // edge vectors
+                    Vector2 edge1 = curr_triangle.p1 - curr_triangle.p0;
+                    Vector2 edge2 = curr_triangle.p2 - curr_triangle.p1;
+                    Vector2 edge3 = curr_triangle.p0 - curr_triangle.p2;
+
+                    // p1 − p0, p2 − p1, and p0 − p2
+                    // p 1-0 | e 01
+                    // p 2-1 | e 12
+                    // p 0-2 | e 20
+
+                    // e01 == 1 - 0
+                    // e12 == 2 - 1
+                    // e20 == 0 - 2
+                    // n01, n12, n20
+
+                    // n01: x = e01.y | y= -e01.x
+
+                    // edge normal vectors
+                    Vector2 n01 = Vector2{ edge1.y, -edge1.x };
+                    Vector2 n12 = Vector2{ edge2.y, -edge2.x };
+                    Vector2 n20 = Vector2{ edge3.y, -edge3.x };
+
+
+                    // current point vectors
+                    Vector2 pv0 = Vector2{ curr_triangle.p0.x - x, curr_triangle.p0.y - y };
+                    Vector2 pv1 = Vector2{ curr_triangle.p1.x - x, curr_triangle.p1.y - y };
+                    Vector2 pv2 = Vector2{ curr_triangle.p2.x - x, curr_triangle.p2.y - y };
+
+                    Real d0 = dot(n01, pv0);
+                    Real d1 = dot(n12, pv1);
+                    Real d2 = dot(n20, pv2);
+
+                    bool within_triangle = (d0 >= 0 && d1 >= 0 && d2 >= 0) || (d0 <= 0 && d1 <= 0 && d2 <= 0);
+
+                    if (within_triangle) {
+                        img(x, y) = curr_triangle.color;
+                    }
+
+                    /*
+                    if (x == curr_triangle.p0.x && y == curr_triangle.p0.y) {
+                        img(x, y) = curr_triangle.color;
+                    } else
+                    if (x == curr_triangle.p1.x && y == curr_triangle.p1.y) {
+                        img(x, y) = curr_triangle.color;
+                    } else
+                    if (x == curr_triangle.p2.x && y == curr_triangle.p2.y) {
+                        img(x, y) = curr_triangle.color;
+                    }
+
+                    if ((x - n01.x) > 0 && (y - n01.y) > 0) {
+                        //img(x, y) = curr_triangle.color;
+                    }
+                    if ((x - n12.x) > 0 && (y - n12.y) > 0) {
+                        img(x, y) = curr_triangle.color;
+                    }
+                    if ((x - n20.x) > 0 && (y - n20.y) > 0) {
+                        //img(x, y) = curr_triangle.color;
+                    }*/
+
                 }
-
-
-
 
 
             }
