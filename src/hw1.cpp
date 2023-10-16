@@ -432,9 +432,161 @@ Image3 hw_1_5(const std::vector<std::string> &params) {
 
     Image3 img(scene.resolution.x, scene.resolution.y);
 
+    Real SSAA_factor = 4;
+    // for each pixel
+    //
+    // circles are ordered from the farthest to the closest.
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
-            img(x, y) = Vector3{1, 1, 1};
+            // y
+            // x
+            // color
+
+            //std::cout << "xy " << x << y << "\n";
+
+            std::vector<Vector3> sub_pixels;
+            Vector3 current_pixel;
+
+            for (Real ssY = y; ssY < y + 1; ssY += (1.0 / SSAA_factor)) {
+                for (Real ssX = x; ssX < x + 1; ssX += (1.0 / SSAA_factor)) {
+
+                    //std::cout << "ss " << ssX << ssY << "\n";
+                    current_pixel = scene.background;
+                    
+                    // size_t https://en.cppreference.com/w/c/types/size_t
+                    for (size_t i = 0; i < scene.shapes.size(); ++i) {
+                        // Access the current shape object
+                        const Shape& shape = scene.shapes[i];
+
+                        if (auto* circle = std::get_if<Circle>(&shape)) {
+                            const Circle& curr_circle = *circle;
+                            // do something with circle
+
+                            // get object space
+                            // translate given coords to object space of shape
+                            Vector3 current_object_space = object_space(ssX, ssY, curr_circle.transform);
+
+                            // Calculate distance from center of circle to current point for every point
+                            // https://math.stackexchange.com/a/198769
+                            Real pythag_a = pow((curr_circle.center.x - current_object_space.x), 2);
+                            Real pythag_b = pow((curr_circle.center.y - current_object_space.y), 2);
+                            Real distance_from_center = sqrt((pythag_a + pythag_b));
+
+                            // if pixel lands on circle
+                            // 
+                            // started with <= but moved to < per Figure 5 & Piazza Q@14. 
+                            // Difference is drawing 1 extra pixel on circle boundary. See Piazza Q@14 for details.
+                            if (distance_from_center < curr_circle.radius) {
+                                current_pixel = curr_circle.color;
+                            }
+                        }
+                        else if (auto* rectangle = std::get_if<Rectangle>(&shape)) {
+                            const Rectangle& curr_rectangle = *rectangle;
+                            // do something with rectangle
+
+                            // Vector2:
+                            //  curr_rectangle.p_min top-left point
+                            //  curr_rectangle.p_max bottom-right point
+
+                            // get object space
+                            // translate given coords to object space of shape
+                            Vector3 current_object_space = object_space(ssX, ssY, rectangle->transform);
+
+                            bool within_x_bounds = (current_object_space.x > curr_rectangle.p_min.x &&
+                                current_object_space.x < curr_rectangle.p_max.x);
+                            bool within_y_bounds = (current_object_space.y > curr_rectangle.p_min.y &&
+                                current_object_space.y < curr_rectangle.p_max.y);
+                            //Real height = curr_rectangle.p_min.y - curr_rectangle.p_max.y;
+                            //Real width = curr_rectangle.p_min.x - curr_rectangle.p_max.x;
+                            if (within_x_bounds && within_y_bounds) {
+                                current_pixel = curr_rectangle.color;
+                            }
+                        }
+                        else if (auto* triangle = std::get_if<Triangle>(&shape)) {
+                            const Triangle& curr_triangle = *triangle;
+                            // do something with triangle
+
+                            // p0, p1, p2
+
+                            // We can determine whether a point q is on the positive or negative half-planes 
+                            // by looking at the sign of the dot product between a vector formed by the point q 
+                            // and the line, and a normal vector n that is perpendicular to the direction of the line.
+                            //
+
+                            // sign of the dot product between a vector formed by the point q and the line
+                            // a normal vector n that is perpendicular to the direction of the line
+
+                            // get object space
+                            // translate given coords to object space of shape
+                            Vector3 current_object_space = object_space(ssX, ssY, triangle->transform);
+
+                            // edge vectors
+                            Vector2 edge1 = curr_triangle.p1 - curr_triangle.p0;
+                            Vector2 edge2 = curr_triangle.p2 - curr_triangle.p1;
+                            Vector2 edge3 = curr_triangle.p0 - curr_triangle.p2;
+
+                            // p1 − p0, p2 − p1, and p0 − p2
+                            // p 1-0 | e 01
+                            // p 2-1 | e 12
+                            // p 0-2 | e 20
+
+                            // e01 == 1 - 0
+                            // e12 == 2 - 1
+                            // e20 == 0 - 2
+                            // n01, n12, n20
+
+                            // n01: x = e01.y | y= -e01.x
+
+                            // edge normal vectors
+                            Vector2 n01 = Vector2{ edge1.y, -edge1.x };
+                            Vector2 n12 = Vector2{ edge2.y, -edge2.x };
+                            Vector2 n20 = Vector2{ edge3.y, -edge3.x };
+
+
+                            // current point vectors
+                            Vector2 pv0 = Vector2{ curr_triangle.p0.x - current_object_space.x, curr_triangle.p0.y - current_object_space.y };
+                            Vector2 pv1 = Vector2{ curr_triangle.p1.x - current_object_space.x, curr_triangle.p1.y - current_object_space.y };
+                            Vector2 pv2 = Vector2{ curr_triangle.p2.x - current_object_space.x, curr_triangle.p2.y - current_object_space.y };
+
+                            Real d0 = dot(n01, pv0);
+                            Real d1 = dot(n12, pv1);
+                            Real d2 = dot(n20, pv2);
+
+                            bool within_triangle = (d0 >= 0 && d1 >= 0 && d2 >= 0) || (d0 <= 0 && d1 <= 0 && d2 <= 0);
+
+                            if (within_triangle) {
+                                current_pixel = curr_triangle.color;
+                            }
+                        }
+
+
+                    }
+
+                    // save current pixel to the SSAA array
+                    // https://cplusplus.com/reference/vector/vector/push_back/
+                    sub_pixels.push_back(current_pixel);
+                    //std::cout << "hello\n";
+
+                }
+            }
+
+            // average the current pixel's (x,y) SSAA array (scale of SSAA_factor).
+            // r g b
+            Vector3 average_pixel = Vector3{0,0,0};
+            //std::cout << size(sub_pixels) << "=======================================================================\n";
+            for (size_t k = 0; k < size(sub_pixels); k++) {
+                average_pixel.x += sub_pixels[k].x;
+                average_pixel.y += sub_pixels[k].y;
+                average_pixel.z += sub_pixels[k].z;
+            }
+            //std::cout << "done\n\n";
+
+            average_pixel.x = average_pixel.x / size(sub_pixels);
+            average_pixel.y = average_pixel.y / size(sub_pixels);
+            average_pixel.z = average_pixel.z / size(sub_pixels);
+
+            img(x, y) = average_pixel;
+
         }
     }
     return img;
