@@ -73,6 +73,13 @@ CircleScene hw1_2_scenes[] = {
     hw1_2_scene_4
 };
 
+
+// https://www.geeksforgeeks.org/program-to-convert-degree-to-radian/
+Real degreesToRadians(Real degrees) {
+    Real pi = 3.14159265359;
+    return (degrees * (pi / 180));
+}
+
 Matrix3x3 parse_transformation(const json &node) {
     // Homework 1.4: parse a sequence of linear transformation and 
     // combine them into an affine matrix
@@ -89,25 +96,66 @@ Matrix3x3 parse_transformation(const json &node) {
                 (*scale_it)[0], (*scale_it)[1]
             };
             // TODO (HW1.4): construct a scale matrix and composite with F
-            UNUSED(scale); // silence warning, feel free to remove it
+            //UNUSED(scale); // silence warning, feel free to remove it
+
+            Matrix3x3 scale_matrix = Matrix3x3::identity();
+
+            scale_matrix(0, 0) = scale.x;
+            scale_matrix(1, 1) = scale.y;
+
+            F = scale_matrix * F;
         } else if (auto rotate_it = it->find("rotate"); rotate_it != it->end()) {
             Real angle = *rotate_it;
             // TODO (HW1.4): construct a rotation matrix and composite with F
-            UNUSED(angle); // silence warning, feel free to remove it
+            //UNUSED(angle); // silence warning, feel free to remove it
+
+            Matrix3x3 rotation_matrix = Matrix3x3::identity();
+
+            // Convert angle from degrees to radians
+            Real radian_angle = degreesToRadians(angle);
+
+            // row by column
+            // [0,0 0,1]
+            // [1,0 1,1]
+            rotation_matrix(0, 0) = cos(radian_angle);
+            rotation_matrix(0, 1) = -sin(radian_angle);
+            rotation_matrix(1, 0) = sin(radian_angle);
+            rotation_matrix(1, 1) = cos(radian_angle);
+
+            F = rotation_matrix * F;
         } else if (auto translate_it = it->find("translate"); translate_it != it->end()) {
             Vector2 translate = Vector2{
                 (*translate_it)[0], (*translate_it)[1]
             };
             // TODO (HW1.4): construct a translation matrix and composite with F
-            UNUSED(translate); // silence warning, feel free to remove it
+            //UNUSED(translate); // silence warning, feel free to remove it
+
+            Matrix3x3 translation_matrix = Matrix3x3::identity();
+
+            translation_matrix(0, 2) = translate.x;
+            translation_matrix(1, 2) = translate.y;
+
+            F = translation_matrix * F;
         } else if (auto shearx_it = it->find("shear_x"); shearx_it != it->end()) {
             Real shear_x = *shearx_it;
             // TODO (HW1.4): construct a shear matrix (x direction) and composite with F
-            UNUSED(shear_x); // silence warning, feel free to remove it
+            //UNUSED(shear_x); // silence warning, feel free to remove it
+
+            Matrix3x3 shearx_matrix = Matrix3x3::identity();
+
+            shearx_matrix(0, 1) = shear_x;
+
+            F = shearx_matrix * F;
         } else if (auto sheary_it = it->find("shear_y"); sheary_it != it->end()) {
             Real shear_y = *sheary_it;
             // TODO (HW1.4): construct a shear matrix (y direction) and composite with F
-            UNUSED(shear_y); // silence warning, feel free to remove it
+            //UNUSED(shear_y); // silence warning, feel free to remove it
+
+            Matrix3x3 sheary_matrix = Matrix3x3::identity();
+
+            sheary_matrix(1, 0) = shear_y;
+
+            F = sheary_matrix * F;
         }
     }
     return F;
