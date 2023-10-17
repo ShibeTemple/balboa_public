@@ -1,3 +1,11 @@
+https://cseweb.ucsd.edu/~tzli/cse167/fa2023/homework1.pdf
+
+Scenes located in \scenes\hw1, namely nether_portal.json.
+ 
+Render outputs located in \outputs\hw1.
+
+
+
 # balboa
 UCSD CSE 167 codebase
 https://cseweb.ucsd.edu/~tzli/cse167/
