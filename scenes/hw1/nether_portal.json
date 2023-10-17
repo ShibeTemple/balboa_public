@@ -1,39 +1,58 @@
 {
     "resolution": [600, 650],
     "background": [
-        0.5, 0.5, 0.5
+        0.0, 0.2, 0.5
     ],
     "objects": [
-
-	
-	
+		{
+            "type": "rectangle",
+            "p_min": [0, 300],
+            "p_max": [650, 650],
+            "color": [0.0, 0.2, 0.0],
+            "alpha": 1.0
+        },
+		{
+            "type": "rectangle",
+            "p_min": [30, 30],
+            "p_max": [200, 200],
+            "color": [1.0, 1.0, 0.0],
+            "alpha": 1.0
+        },
+		{
+            "type": "rectangle",
+            "p_min": [300, 30],
+            "p_max": [500, 80],
+            "color": [1.0, 1.0, 1.0],
+            "alpha": 1.0
+        },
+		
         {
             "type": "rectangle",
             "p_min": [120, 120],
             "p_max": [320, 360],
-            "color": [0.6, 0.3, 0.5],
+            "color": [0.8, 0.2, 0.7],
             "alpha": 0.4
         },
         {
             "type": "rectangle",
             "p_min": [120, 170],
             "p_max": [340, 370],
-            "color": [0.3, 0.5, 0.5],
+            "color": [0.8, 0.2, 0.7],
             "alpha": 0.6
         },
         {
             "type": "rectangle",
             "p_min": [220, 220],
             "p_max": [390, 430],
-            "color": [0.8, 0.3, 0.3],
+            "color": [0.8, 0.2, 0.7],
             "alpha": 0.9
         },
         {
             "type": "rectangle",
             "p_min": [290, 220],
             "p_max": [460, 520],
-            "color": [0.2, 0.3, 0.5],
-            "alpha": 0.3
+            "color": [0.8, 0.2, 0.7],
+            "alpha": 0.8
         },
         {
             "type": "rectangle",
@@ -42,35 +61,123 @@
             "color": [0.8, 0.2, 0.7],
             "alpha": 0.5
         },
+		{
+            "type": "rectangle",
+            "p_max": [510, 340],
+            "p_min": [330, 150],
+            "color": [0.8, 0.2, 0.7],
+            "alpha": 0.6
+        },
+		{
+            "type": "rectangle",
+            "p_min": [300, 140],
+            "p_max": [450, 340],
+            "color": [0.8, 0.2, 0.7],
+            "alpha": 0.5
+        },
+		{
+            "type": "rectangle",
+            "p_min": [120, 140],
+            "p_max": [320, 370],
+            "color": [0.8, 0.2, 0.7],
+            "alpha": 0.6
+        },
+		{
+            "type": "rectangle",
+            "p_min": [120, 340],
+            "p_max": [320, 540],
+            "color": [0.8, 0.2, 0.7],
+            "alpha": 0.7
+        },
 		
 		
 		{
             "type": "rectangle",
-            "p_min": [50, 50],
+            "p_min": [100, 100],
+            "p_max": [150, 550],
+            "color": [0.8, 0.0, 1.0],
+            "alpha": 1.0
+        },
+		{
+            "type": "rectangle",
+            "p_min": [500, 100],
+            "p_max": [550, 550],
+            "color": [0.8, 0.0, 1.0],
+            "alpha": 1.0
+        },
+		{ 
+            "type": "rectangle",
+            "p_min": [100, 100],
+            "p_max": [501, 150],
+            "color": [0.8, 0.0, 1.0],
+            "alpha": 1.0
+        },
+		{
+            "type": "rectangle",
+            "p_min": [100, 500],
+            "p_max": [501, 550],
+            "color": [0.8, 0.0, 1.0],
+            "alpha": 1.0
+		},
+		
+		
+		{
+            "type": "rectangle",
+            "p_min": [100, 100],
             "p_max": [150, 550],
             "color": [0.0, 0.0, 0.0],
-            "alpha": 1.0
+            "alpha": 0.9
         },
 		{
             "type": "rectangle",
-            "p_min": [500, 50],
+            "p_min": [500, 100],
             "p_max": [550, 550],
             "color": [0.0, 0.0, 0.0],
-            "alpha": 1.0
+            "alpha": 0.9
+        },
+		{ 
+            "type": "rectangle",
+            "p_min": [100, 100],
+            "p_max": [501, 150],
+            "color": [0.0, 0.0, 0.0],
+            "alpha": 0.9
         },
 		{
             "type": "rectangle",
-            "p_min": [50, 50],
-            "p_max": [500, 150],
+            "p_min": [100, 500],
+            "p_max": [501, 550],
             "color": [0.0, 0.0, 0.0],
-            "alpha": 1.0
+            "alpha": 0.9
+		},
+		
+		
+		{
+            "type": "rectangle",
+            "p_min": [100, 100],
+            "p_max": [150, 550],
+            "color": [0.0, 0.0, 0.0],
+            "alpha": 0.9
         },
 		{
             "type": "rectangle",
-            "p_min": [50, 500],
-            "p_max": [500, 550],
+            "p_min": [500, 100],
+            "p_max": [550, 550],
             "color": [0.0, 0.0, 0.0],
-            "alpha": 1.0
-        }
+            "alpha": 0.9
+        },
+		{ 
+            "type": "rectangle",
+            "p_min": [100, 100],
+            "p_max": [501, 150],
+            "color": [0.0, 0.0, 0.0],
+            "alpha": 0.9
+        },
+		{
+            "type": "rectangle",
+            "p_min": [100, 500],
+            "p_max": [501, 550],
+            "color": [0.0, 0.0, 0.0],
+            "alpha": 0.9
+		}
     ]
 }
