@@ -14,6 +14,7 @@ Image3 hw_2_1(const std::vector<std::string> &params) {
     Real s = 1; // scaling factor of the view frustrum
     Vector3 color = Vector3{1.0, 0.5, 0.5};
     Real z_near = 1e-6; // distance of the near clipping plane
+    // get passed parameters
     for (int i = 0; i < (int)params.size(); i++) {
         if (params[i] == "-s") {
             s = std::stof(params[++i]);
@@ -38,6 +39,28 @@ Image3 hw_2_1(const std::vector<std::string> &params) {
             z_near = std::stof(params[++i]);
         }
     }
+
+    // define projected points
+    Vector3 pp0{0,0,0};
+    pp0.x = -p0.x/p0.z;
+    pp0.y = -p0.y/p0.z;
+
+    Vector3 pp1{0,0,0};
+    pp1.x = -p1.x/p1.z;
+    pp1.y = -p1.y/p1.z;
+    
+    Vector3 pp2{0,0,0};
+    pp2.x = -p2.x/p2.z;
+    pp2.y = -p2.y/p2.z;
+
+    
+
+    // image plane is at z = -1
+    // projected point(s) (x',y') = (-x/z,-y/z)
+    // extent of the image plane = [-sa,-s,-1]x[sa,s,-1]
+    
+    // s = scale factor = tan(a/2)
+    // a = aspect ratio (image width/image height)
 
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
