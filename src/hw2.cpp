@@ -226,6 +226,83 @@ Image3 hw_2_1(const std::vector<std::string> &params) {
     return img;
 }
 
+Real parallelogramArea3D(Vector3 A, Vector3 B) {
+    // cross product of the two edge vectors
+    Vector3 X = cross(A, B);
+
+    // https://math.stackexchange.com/q/643227
+    // length of the cross product
+    Real x_len = length(X);
+
+    return x_len;
+}
+// returns the area of a given 3D triangle based on its three point vertices
+Real triangleArea3D(Vector3 A, Vector3 B, Vector3 C) {
+    // area of triangle = area of parallelogram /2 = ||u x v|| / 2
+    // https://mathsathome.com/vector-between-2-points/ 
+    // from the three point vectors, get the two edge vectors for the cross product.
+    // co-pilot: then get the area of the parallelogram formed by the two edge vectors.
+    // co-pilot: then divide by 2 to get the area of the triangle.
+    // area(A,B,C) = 1/2 * ||(B-A) x (C-A)|| .... which is basically (A->B), (A->C) 
+    // https://math.stackexchange.com/questions/128991/how-to-calculate-area-of-3d-triangle
+
+    // A->B = (B-A)
+    Vector3 AtoB = B - A;
+    // A->C = (C-A)
+    Vector3 AtoC = C - A;
+
+    Real parallelogram_area = parallelogramArea3D(AtoB, AtoC) / Real(2);
+
+    // divide by 2 to get the area of the triangle.
+    return parallelogram_area / Real(2);
+}
+// returns the area of a given 2D triangle based on its three point vertices
+Real triangleArea2D(Vector2 A, Vector2 B, Vector2 C) {
+    // Substantiate the 3D points with z=0
+    return triangleArea3D(Vector3{A.x, A.y, 0.0}, Vector3{B.x, B.y, 0.0}, Vector3{C.x, C.y, 0.0});
+}
+
+Real depthOfPixel(Vector3 p0, Vector3 p1, Vector3 p2,  
+                  Vector2 pp0, Vector2 pp1, Vector2 pp2,  
+                  Real x, Real y) {
+    // get the depth of the pixel
+
+    // vertices of 3D-native triangle: <p0>, <p1>, <p2>
+    // vertices of projected triangle: (pp0), (pp1), (pp2)
+    // current point (pixel): (x, y) -- 'projected' as on image-plane
+
+    // z = b0*p0.z + b1*p1.z + b2*p2.z
+
+    // 1. Compute projected (image space) barycentric coordinates. b'0 b'1 b'2 (Eq.5)
+    // 2. Find original barycentric coordinates using the projected ones and depth at the three vertices. (Eq.14)
+    // 3. Finally, obtain depth using Eq.15
+
+    // projected barycentric coordinates
+    //
+    Real projected_barycentric_denominator = triangleArea2D(pp0, pp1, pp2); // area(pp0, pp1, pp2)
+    // b'0 = area(p, pp1, pp2) / area(pp0, pp1, pp2)
+    Real bp0 = triangleArea2D(Vector2{x,y}, pp1, pp2) / projected_barycentric_denominator;
+    // b'1 = area(pp0, p, pp2) / area(pp0, pp1, pp2)
+    Real bp1 = triangleArea2D(pp0, Vector2{x,y}, pp2) / projected_barycentric_denominator;
+    // b'2 = area(pp0, pp1, p) / area(pp0, pp1, pp2)
+    Real bp2 = triangleArea2D(pp0, pp1, Vector2{x,y}) / projected_barycentric_denominator;
+
+    // original barycentric coordinates
+    //
+    Real original_barycentric_denominator = ((bp0/p0.z)+(bp1/p1.z)+(bp2/p2.z));
+    // b0
+    Real b0 = (bp0/p0.z)/original_barycentric_denominator;
+    // b1
+    Real b1 = (bp1/p1.z)/original_barycentric_denominator;
+    // b2
+    Real b2 = (bp2/p1.z)/original_barycentric_denominator;
+
+    // final depth formula, of the pixel
+    Real z = b0 * p0.z + b1 * p1.z + b2 * p2.z;
+
+    return z;
+}
+
 Image3 hw_2_2(const std::vector<std::string> &params) {
     // Homework 2.2: render a triangle mesh
 
@@ -249,7 +326,14 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
     TriangleMesh mesh = meshes[scene_id];
     //UNUSED(mesh); // silence warning, feel free to remove this
 
+    Real furthest_z_depth = -1000000; // infinity. 
     Image3 z_buffer = Image3(img.width, img.height);
+    for (int y = 0; y < img.height; y++) {
+        for (int x = 0; x < img.width; x++) {
+            z_buffer(x, y) = Vector3{0.0, 0.0, furthest_z_depth}; // max z_buffer depth.
+            img(x, y) = Vector3{0.5, 0.5, 0.5}; // background color of image
+        }
+    }
     // full of x,y,z. z 0is the depth of the pixel. stores the closest Z value for each pixel. updated by the below loop.
     
     std::cout << "Size of mesh.vertices: " << mesh.vertices.size() << "\n";
@@ -308,23 +392,31 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
             for (int x = 0; x < img.width; x++) {
                 // if pixel center hits triangle
                 //img(x, y) = Vector3{1, 1, 1};
+
+                //std::cout << "NIT"; // not in triangle
                 if (pointInTriangle(pp0, pp1, pp2, x, y)) {
-                    // get the depth of the pixel
-                    Real z = -1.0; // TODO: get the depth of the pixel
+                    
+
+                    Real z_depth = depthOfPixel(p0, p1, p2, pp0, pp1, pp2, x, y);
+
+                    //std::cout << "\n\n[" << i << "]" << " pixel: " << Vector2{x,y} << " current z_depth: " << z_depth << " | stored z_buffer: " << z_buffer(x,y).z; 
+
                     // if the depth of the pixel is less than the current depth in the z_buffer, update the z_buffer and the pixel color
-                    if (z < z_buffer(x, y).z) {
+                    if (z_depth > z_buffer(x, y).z) {
+
+                        //std::cout << "********** OVERRIDING!!! **********";
+
                         // update the z_buffer
-                        z_buffer(x, y).z = z;
+                        z_buffer(x, y).z = z_depth;
                         // update the pixel color
                         img(x, y) = mesh.face_colors[i];
                     }
+
+                    //std::cout << "\n";
                 }
             }
         }
-
     }
-
-
     return img;
 }
 
