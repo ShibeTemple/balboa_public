@@ -636,14 +636,131 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
     Scene scene = parse_scene(params[0]);
     std::cout << scene << std::endl;
 
-    Image3 img(scene.camera.resolution.x,
+    Image3 return_img(scene.camera.resolution.x,
                scene.camera.resolution.y);
 
-    for (int y = 0; y < img.height; y++) {
-        for (int x = 0; x < img.width; x++) {
-            img(x, y) = Vector3{1, 1, 1};
+    Real SSAA_factor = 4;
+    Image3 img(return_img.width*SSAA_factor /* width */, return_img.height*SSAA_factor /* height */);
+
+    Real a = Real(img.width) / Real(img.height); // aspect ratio
+    Real s = 1; // scaling factor of the view frustrum
+    Real z_near = 1e-6; // distance of the near clipping plane
+    int scene_id = 0;
+    for (int i = 0; i < (int)params.size(); i++) {
+        if (params[i] == "-s") {
+            s = std::stof(params[++i]);
+        } else if (params[i] == "-znear") {
+            z_near = std::stof(params[++i]);
+        } else if (params[i] == "-scene_id") {
+            scene_id = std::stoi(params[++i]);
         }
     }
-    return img;
+    TriangleMesh mesh = meshes[scene_id];
+    std::cout << "Size of mesh.vertices: " << mesh.vertices.size() << "\n";
+    std::cout << "Size of mesh.faces: " << mesh.faces.size() << "\n";
+
+    Real furthest_z_depth = -1000000; // infinity. 
+    // full of x,y,z. z 0is the depth of the pixel. stores the closest Z value for each pixel. updated by the below loop.
+    Image3 z_buffer = Image3(img.width, img.height);
+    for (int y = 0; y < img.height; y++) {
+        for (int x = 0; x < img.width; x++) {
+            z_buffer(x, y) = Vector3{0.0, 0.0, furthest_z_depth}; // max z_buffer depth.
+            img(x, y) = Vector3{0.5, 0.5, 0.5}; // background color of image
+        }
+    }
+
+    // for each triangle in the mesh 
+    for (size_t i = 0; i < mesh.faces.size(); ++i) {
+        std::cout << "i: " << i << "\n";
+        std::cout << "mesh.faces[i]: " << mesh.faces[i] << "\n";
+        std::cout << "mesh.vertices[mesh.faces[i].x]: " << mesh.vertices[mesh.faces[i].x] << "\n";
+        std::cout << "mesh.vertices[mesh.faces[i].y]: " << mesh.vertices[mesh.faces[i].y] << "\n";
+        std::cout << "mesh.vertices[mesh.faces[i].z]: " << mesh.vertices[mesh.faces[i].z] << "\n";
+        std::cout << "mesh.face_colors[i]: " << mesh.face_colors[i] << "\n";
+        
+
+        // get the 3 vertices of the triangle
+        Vector3 p0 = mesh.vertices[mesh.faces[i].x];
+        Vector3 p1 = mesh.vertices[mesh.faces[i].y];
+        Vector3 p2 = mesh.vertices[mesh.faces[i].z];
+
+        // define projected points (onto image plane)
+        Vector2 pp0{0,0};
+        pp0.x = -p0.x/p0.z;
+        pp0.y = -p0.y/p0.z;
+
+        Vector2 pp1{0,0};
+        pp1.x = -p1.x/p1.z;
+        pp1.y = -p1.y/p1.z;
+        
+        Vector2 pp2{0,0};
+        pp2.x = -p2.x/p2.z;
+        pp2.y = -p2.y/p2.z;
+
+        // convert projected points (in camera space) to image space
+        pp0.x = xcameraToImageSpace(pp0.x, img.width, s, a);
+        pp0.y = ycameraToImageSpace(pp0.y, img.height, s, a);
+
+        pp1.x = xcameraToImageSpace(pp1.x, img.width, s, a);
+        pp1.y = ycameraToImageSpace(pp1.y, img.height, s, a);
+
+        pp2.x = xcameraToImageSpace(pp2.x, img.width, s, a);
+        pp2.y = ycameraToImageSpace(pp2.y, img.height, s, a);
+
+        // now loop for each pixel in the image
+        // TODO: ONLY do this for pixels within the triangle bounding box to simplify complexity. This would be in image space.
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                // if pixel center hits triangle
+                if (pointInTriangle(pp0, pp1, pp2, x, y)) {
+                    
+                    barycentric_coordinates barycentric = convertToBarycentric(p0, p1, p2, pp0, pp1, pp2, x, y);
+
+                    Real z_depth = depthOfPixel(p0, p1, p2, barycentric);
+
+                    // if the depth of the pixel is less than the current depth in the z_buffer, update the z_buffer and the pixel color
+                    if (z_depth > z_buffer(x, y).z) {
+
+                        Vector3 c0 = mesh.vertex_colors[mesh.faces[i].x];
+                        Vector3 c1 = mesh.vertex_colors[mesh.faces[i].y];
+                        Vector3 c2 = mesh.vertex_colors[mesh.faces[i].z];
+
+                        Vector3 color = colorOfPixel(c0, c1, c2, barycentric);
+
+                        // update the z_buffer
+                        z_buffer(x, y).z = z_depth;
+                        // update the pixel color
+                        img(x, y) = color;
+                    }
+                }
+            }
+        }
+    }
+
+    // Scale SSAA image down to return_image size (Apply SSAA)
+    // for each pixel in the return image (non-SSAA scaled, smaller image)
+    for (int y = 0; y < return_img.height; y++) {
+        for (int x = 0; x < return_img.width; x++) {
+            Vector3 avg_color = Vector3{0,0,0};
+
+            // for each sub-pixel (in the larger SSAA scaled, larger image) at the current pixel
+            for (int dx = 0; dx < SSAA_factor; dx++) {
+                for (int dy = 0; dy < SSAA_factor; dy++) {
+                    // (SSAA_factor) * (current x position) + (current sub x position)
+                    Real curr_x = SSAA_factor * x + dx;
+                    Real curr_y = SSAA_factor * y + dy;
+
+                    Vector3 current_color = img(curr_x, curr_y);
+
+                    avg_color += current_color;
+
+                }
+            }
+            // populate the return image with the average color from the larger image
+            return_img(x, y) = avg_color / Real(SSAA_factor * SSAA_factor);
+        }
+    }
+
+    return return_img;
 }
 
