@@ -306,7 +306,9 @@ Real depthOfPixel(Vector3 p0, Vector3 p1, Vector3 p2,
 Image3 hw_2_2(const std::vector<std::string> &params) {
     // Homework 2.2: render a triangle mesh
 
-    Image3 img(640 /* width */, 480 /* height */);
+    Image3 return_img(640 /* width */, 480 /* height */);
+    Real SSAA_factor = 4;
+    Image3 img(return_img.width*SSAA_factor /* width */, return_img.height*SSAA_factor /* height */);
 
     Real a = Real(img.width) / Real(img.height); // aspect ratio
 
@@ -328,12 +330,20 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
 
     Real furthest_z_depth = -1000000; // infinity. 
     Image3 z_buffer = Image3(img.width, img.height);
+    //std::cout << "init" << "\n";
+    //std::cout << "img.height: " << img.height << "\n";
+    //std::cout << "img.width: " << img.width << "\n";
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
             z_buffer(x, y) = Vector3{0.0, 0.0, furthest_z_depth}; // max z_buffer depth.
             img(x, y) = Vector3{0.5, 0.5, 0.5}; // background color of image
+
+
+            //std::cout << "within" << "\n";
+            //std::cout << "img(" << x << "," << y << "): " << img(x, y) << "\n";
         }
     }
+    //std::cout << "end init" << "\n";
     // full of x,y,z. z 0is the depth of the pixel. stores the closest Z value for each pixel. updated by the below loop.
     
     std::cout << "Size of mesh.vertices: " << mesh.vertices.size() << "\n";
@@ -347,6 +357,7 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
     mesh.vertices[mesh.faces[i].z]: (-0.5, -1, -5)
     mesh.face_colors[i]: (0.35, 0.75, 0.35)
     */
+
 
     // for each triangle in the mesh 
     for (size_t i = 0; i < mesh.faces.size(); ++i) {
@@ -417,7 +428,36 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
             }
         }
     }
-    return img;
+
+    std::cout << "merging\n";
+
+    // Scale SSAA image down to return_image size (Apply SSAA)
+    for (int y = 0; y < return_img.height; y++) {
+        for (int x = 0; x < return_img.width; x++) {
+            //std::cout << "x: " << x << " y: " << y << "\n";
+            Vector3 avg_color = Vector3{0,0,0};
+
+            for (int dx = 0; dx < SSAA_factor; dx++) {
+                for (int dy = 0; dy < SSAA_factor; dy++) {
+                    //std::cout << "dx: " << dx << " dy: " << dy << "\n";
+                    // (SSAA_factor) * (current x position) + (current sub x position)
+                    Real curr_x = SSAA_factor * x + dx;
+                    Real curr_y = SSAA_factor * y + dy;
+                    //std::cout << "curr_x: " << curr_x << " curr_y: " << curr_y << "\n";
+                    Vector3 current_color = img(curr_x, curr_y);
+                    //std::cout << "current_color: " << current_color << "\n";
+
+                    avg_color += current_color;
+
+                }
+            }
+
+            //std::cout << "avg_color: " << avg_color << "\n";
+            return_img(x, y) = avg_color / Real(SSAA_factor * SSAA_factor);
+        }
+    }
+
+    return return_img;
 }
 
 Image3 hw_2_3(const std::vector<std::string> &params) {
