@@ -251,7 +251,7 @@ Real triangleArea3D(Vector3 A, Vector3 B, Vector3 C) {
     // A->C = (C-A)
     Vector3 AtoC = C - A;
 
-    Real parallelogram_area = parallelogramArea3D(AtoB, AtoC) / Real(2);
+    Real parallelogram_area = parallelogramArea3D(AtoB, AtoC);
 
     // divide by 2 to get the area of the triangle.
     return parallelogram_area / Real(2);
@@ -295,7 +295,7 @@ Real depthOfPixel(Vector3 p0, Vector3 p1, Vector3 p2,
     // b1
     Real b1 = (bp1/p1.z)/original_barycentric_denominator;
     // b2
-    Real b2 = (bp2/p1.z)/original_barycentric_denominator;
+    Real b2 = (bp2/p2.z)/original_barycentric_denominator;
 
     // final depth formula, of the pixel
     Real z = b0 * p0.z + b1 * p1.z + b2 * p2.z;
