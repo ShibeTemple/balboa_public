@@ -1,0 +1,32 @@
+{
+    "camera":
+    {
+        "resolution": [320, 240],
+        "transform": [
+            {
+                "lookat":
+                {
+                    "position": [1, 5, 20],
+                    "target": [0, 1, 0],
+                    "up": [0, 1, 0.5]
+                }
+            }
+        ],
+        "s": 0.4,
+        "z_near": 1e-6
+    },
+    "background": [
+        0.5, 0.5, 0.5
+    ],
+    "objects": [
+        {
+            "filename": "screw3.ply",
+            "transform": [
+                {"rotate": [75, 3.5, 22, 1.2]},
+                {"scale": [1, 1, 1]},
+                {"translate": [-5, 2, 0.2]}
+                
+            ]
+        }
+    ]
+}

@@ -1,3 +1,16 @@
+# HW2
+
+https://cseweb.ucsd.edu/~tzli/cse167/fa2023/homework2.pdf
+
+Scenes are located in the \scenes\hw2 dir, custom is screw.json and screw3.ply (mesh optimized + color).
+
+Render outputs are in \outputs\hw2.
+
+Code in \src dir.
+
+
+# HW1
+
 https://cseweb.ucsd.edu/~tzli/cse167/fa2023/homework1.pdf
 
 Scenes located in \scenes\hw1, namely nether_portal.json.
