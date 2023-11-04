@@ -140,6 +140,11 @@ Image3 hw_2_1(const std::vector<std::string> &params) {
     std::cout << "p2: " << p2 << "\n";
     }
 
+    if (-p0.z < z_near || -p1.z < z_near || -p2.z < z_near) {
+        std::cout << "ERROR: p0, p1, or p2 is less than z_near\n";
+        return img;
+    }
+
     // define projected points
     Vector2 pp0{0,0};
     pp0.x = -p0.x/p0.z;
@@ -404,6 +409,10 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
         Vector3 p1 = mesh.vertices[mesh.faces[i].y];
         Vector3 p2 = mesh.vertices[mesh.faces[i].z];
 
+        if (-p0.z < z_near || -p1.z < z_near || -p2.z < z_near) {
+            continue;
+        }
+
         // define projected points (onto image plane)
         Vector2 pp0{0,0};
         pp0.x = -p0.x/p0.z;
@@ -546,6 +555,11 @@ Image3 hw_2_3(const std::vector<std::string> &params) {
         Vector3 p0 = mesh.vertices[mesh.faces[i].x];
         Vector3 p1 = mesh.vertices[mesh.faces[i].y];
         Vector3 p2 = mesh.vertices[mesh.faces[i].z];
+
+
+        if (-p0.z < z_near || -p1.z < z_near || -p2.z < z_near) {
+            continue;
+        }
 
         // define projected points (onto image plane)
         Vector2 pp0{0,0};
@@ -721,6 +735,7 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
             Vector3 p1 = mesh.vertices[mesh.faces[i].y];
             Vector3 p2 = mesh.vertices[mesh.faces[i].z];
 
+
             // object to world
             // logic in hw2_scenes.cpp
             Matrix4x4 M = mesh.model_matrix; 
@@ -747,6 +762,15 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
             p1 = Vector3{tt1.x, tt1.y, tt1.z};
             p2 = Vector3{tt2.x, tt2.y, tt2.z};
             
+            if (-p0.z < z_near || -p1.z < z_near || -p2.z < z_near) {
+                std::cout << "skipping.\n";
+                std::cout << "z_near: " << z_near << "\n";
+                std::cout << "-p0.z: " << -p0.z << "\n";
+                std::cout << "-p1.z: " << -p0.z << "\n";
+                std::cout << "-p2.z: " << -p0.z << "\n";
+                continue;
+            }
+
             /*
             // define projected points (onto image plane)
             Vector2 pp0{0,0};
