@@ -11,7 +11,7 @@ Real xcameraToImageSpace(Real x, Real width, Real s, Real a) {
 
     return xpp;
 }
-Real ycameraToImageSpace(Real y, Real height, Real s, Real a) {
+Real ycameraToImageSpace(Real y, Real height, Real s) {
     Real ypp = 0;
 
     ypp = (height*((-y+s)/(2*s))); // assumption
@@ -161,13 +161,13 @@ Image3 hw_2_1(const std::vector<std::string> &params) {
 
     // convert projected points (in camera space) to image space
     pp0.x = xcameraToImageSpace(pp0.x, img.width, s, a);
-    pp0.y = ycameraToImageSpace(pp0.y, img.height, s, a);
+    pp0.y = ycameraToImageSpace(pp0.y, img.height, s);
 
     pp1.x = xcameraToImageSpace(pp1.x, img.width, s, a);
-    pp1.y = ycameraToImageSpace(pp1.y, img.height, s, a);
+    pp1.y = ycameraToImageSpace(pp1.y, img.height, s);
 
     pp2.x = xcameraToImageSpace(pp2.x, img.width, s, a);
-    pp2.y = ycameraToImageSpace(pp2.y, img.height, s, a);
+    pp2.y = ycameraToImageSpace(pp2.y, img.height, s);
     
     if (debug_hw2_1) {
     std::cout << "pp0: " << pp0 << "\n";
@@ -419,13 +419,13 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
 
         // convert projected points (in camera space) to image space
         pp0.x = xcameraToImageSpace(pp0.x, img.width, s, a);
-        pp0.y = ycameraToImageSpace(pp0.y, img.height, s, a);
+        pp0.y = ycameraToImageSpace(pp0.y, img.height, s);
 
         pp1.x = xcameraToImageSpace(pp1.x, img.width, s, a);
-        pp1.y = ycameraToImageSpace(pp1.y, img.height, s, a);
+        pp1.y = ycameraToImageSpace(pp1.y, img.height, s);
 
         pp2.x = xcameraToImageSpace(pp2.x, img.width, s, a);
-        pp2.y = ycameraToImageSpace(pp2.y, img.height, s, a);
+        pp2.y = ycameraToImageSpace(pp2.y, img.height, s);
 
         // now loop for each pixel in the image
         // TODO: ONLY do this for pixels within the triangle bounding box to simplify complexity. This would be in image space.
@@ -562,13 +562,13 @@ Image3 hw_2_3(const std::vector<std::string> &params) {
 
         // convert projected points (in camera space) to image space
         pp0.x = xcameraToImageSpace(pp0.x, img.width, s, a);
-        pp0.y = ycameraToImageSpace(pp0.y, img.height, s, a);
+        pp0.y = ycameraToImageSpace(pp0.y, img.height, s);
 
         pp1.x = xcameraToImageSpace(pp1.x, img.width, s, a);
-        pp1.y = ycameraToImageSpace(pp1.y, img.height, s, a);
+        pp1.y = ycameraToImageSpace(pp1.y, img.height, s);
 
         pp2.x = xcameraToImageSpace(pp2.x, img.width, s, a);
-        pp2.y = ycameraToImageSpace(pp2.y, img.height, s, a);
+        pp2.y = ycameraToImageSpace(pp2.y, img.height, s);
 
         // now loop for each pixel in the image
         // TODO: ONLY do this for pixels within the triangle bounding box to simplify complexity. This would be in image space.
@@ -633,6 +633,7 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
         return Image3(0, 0);
     }
 
+    std::cout << "params[0]: " << params[0] << "\n";
     Scene scene = parse_scene(params[0]);
     std::cout << scene << std::endl;
 
@@ -642,22 +643,20 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
     Real SSAA_factor = 4;
     Image3 img(return_img.width*SSAA_factor /* width */, return_img.height*SSAA_factor /* height */);
 
+    // Object Space
+    //    v  model matrix
+    // World Space
+    //    v  view matrix
+    // Camera Space
+    //    v  projection matrix
+    // Screen Space
+    // 
+    // given vertex v on 3D triangle mesh, we can project to screen space using:
+    // v' = PVMv = P * V * M * v
+
     Real a = Real(img.width) / Real(img.height); // aspect ratio
-    Real s = 1; // scaling factor of the view frustrum
-    Real z_near = 1e-6; // distance of the near clipping plane
-    int scene_id = 0;
-    for (int i = 0; i < (int)params.size(); i++) {
-        if (params[i] == "-s") {
-            s = std::stof(params[++i]);
-        } else if (params[i] == "-znear") {
-            z_near = std::stof(params[++i]);
-        } else if (params[i] == "-scene_id") {
-            scene_id = std::stoi(params[++i]);
-        }
-    }
-    TriangleMesh mesh = meshes[scene_id];
-    std::cout << "Size of mesh.vertices: " << mesh.vertices.size() << "\n";
-    std::cout << "Size of mesh.faces: " << mesh.faces.size() << "\n";
+    Real s = scene.camera.s; // scaling factor of the view frustrum
+    Real z_near = scene.camera.z_near; // distance of the near clipping plane
 
     Real furthest_z_depth = -1000000; // infinity. 
     // full of x,y,z. z 0is the depth of the pixel. stores the closest Z value for each pixel. updated by the below loop.
@@ -665,78 +664,156 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
             z_buffer(x, y) = Vector3{0.0, 0.0, furthest_z_depth}; // max z_buffer depth.
-            img(x, y) = Vector3{0.5, 0.5, 0.5}; // background color of image
+            img(x, y) = scene.background; // background color of image
         }
     }
 
-    // for each triangle in the mesh 
-    for (size_t i = 0; i < mesh.faces.size(); ++i) {
-        std::cout << "i: " << i << "\n";
-        std::cout << "mesh.faces[i]: " << mesh.faces[i] << "\n";
-        std::cout << "mesh.vertices[mesh.faces[i].x]: " << mesh.vertices[mesh.faces[i].x] << "\n";
-        std::cout << "mesh.vertices[mesh.faces[i].y]: " << mesh.vertices[mesh.faces[i].y] << "\n";
-        std::cout << "mesh.vertices[mesh.faces[i].z]: " << mesh.vertices[mesh.faces[i].z] << "\n";
-        std::cout << "mesh.face_colors[i]: " << mesh.face_colors[i] << "\n";
-        
 
-        // get the 3 vertices of the triangle
-        Vector3 p0 = mesh.vertices[mesh.faces[i].x];
-        Vector3 p1 = mesh.vertices[mesh.faces[i].y];
-        Vector3 p2 = mesh.vertices[mesh.faces[i].z];
+    // world to camera
+    Matrix4x4 V = inverse(scene.camera.cam_to_world);
 
-        // define projected points (onto image plane)
-        Vector2 pp0{0,0};
-        pp0.x = -p0.x/p0.z;
-        pp0.y = -p0.y/p0.z;
+    std::cout << V << "\n";
 
-        Vector2 pp1{0,0};
-        pp1.x = -p1.x/p1.z;
-        pp1.y = -p1.y/p1.z;
-        
-        Vector2 pp2{0,0};
-        pp2.x = -p2.x/p2.z;
-        pp2.y = -p2.y/p2.z;
+    // perspective projection
+    // takes point from object space to screen space.
 
-        // convert projected points (in camera space) to image space
-        pp0.x = xcameraToImageSpace(pp0.x, img.width, s, a);
-        pp0.y = ycameraToImageSpace(pp0.y, img.height, s, a);
+    // another matrix is needed for to screen space.
+    // this is world to camera space. (could be object if no transformations are applied)
+    // view matrix V (Fig.12)
+    Matrix4x4 view_matrix = Matrix4x4::identity(); // P1
+    view_matrix(2,2) = 0;
+    view_matrix(2,3) = 1;
+    view_matrix(3,2) = -1;
+    view_matrix(3,3) = 0;
+    // * x,y,z,1 = x',y',z',w' (1 column)
 
-        pp1.x = xcameraToImageSpace(pp1.x, img.width, s, a);
-        pp1.y = ycameraToImageSpace(pp1.y, img.height, s, a);
+    std::cout << view_matrix << "\n";
 
-        pp2.x = xcameraToImageSpace(pp2.x, img.width, s, a);
-        pp2.y = ycameraToImageSpace(pp2.y, img.height, s, a);
+    //view_matrix should be = to V
 
-        // now loop for each pixel in the image
-        // TODO: ONLY do this for pixels within the triangle bounding box to simplify complexity. This would be in image space.
-        for (int y = 0; y < img.height; y++) {
-            for (int x = 0; x < img.width; x++) {
-                // if pixel center hits triangle
-                if (pointInTriangle(pp0, pp1, pp2, x, y)) {
-                    
-                    barycentric_coordinates barycentric = convertToBarycentric(p0, p1, p2, pp0, pp1, pp2, x, y);
+    // camera space to screen space
+    // projection matrix
+    Matrix4x4 projection_matrix = Matrix4x4::identity(); // P2
+    projection_matrix(0,0) = img.width/(2*s*a);
+    projection_matrix(1,1) = -img.height/(2*s);
+    projection_matrix(0,3) = img.width/Real(2);
+    projection_matrix(1,3) = img.height/Real(2);
+    // TODO: understand this better ^^^
 
-                    Real z_depth = depthOfPixel(p0, p1, p2, barycentric);
+    std::cout << projection_matrix << "\n";
 
-                    // if the depth of the pixel is less than the current depth in the z_buffer, update the z_buffer and the pixel color
-                    if (z_depth > z_buffer(x, y).z) {
+    // for each mesh in the scene
+    for (TriangleMesh mesh : scene.meshes) {
+        std::cout << "Size of mesh.vertices: " << mesh.vertices.size() << "\n";
+        std::cout << "Size of mesh.faces: " << mesh.faces.size() << "\n";
+        // for each triangle in the mesh 
+        for (size_t i = 0; i < mesh.faces.size(); ++i) {
+            std::cout << "i: " << i << "\n";
+            std::cout << "mesh.faces[i]: " << mesh.faces[i] << "\n";
+            std::cout << "mesh.vertices[mesh.faces[i].x]: " << mesh.vertices[mesh.faces[i].x] << "\n";
+            std::cout << "mesh.vertices[mesh.faces[i].y]: " << mesh.vertices[mesh.faces[i].y] << "\n";
+            std::cout << "mesh.vertices[mesh.faces[i].z]: " << mesh.vertices[mesh.faces[i].z] << "\n";
+            //std::cout << "mesh.face_colors[i]: " << mesh.face_colors[i] << "\n";
+            
 
-                        Vector3 c0 = mesh.vertex_colors[mesh.faces[i].x];
-                        Vector3 c1 = mesh.vertex_colors[mesh.faces[i].y];
-                        Vector3 c2 = mesh.vertex_colors[mesh.faces[i].z];
+            // get the 3 vertices of the triangle
+            Vector3 p0 = mesh.vertices[mesh.faces[i].x];
+            Vector3 p1 = mesh.vertices[mesh.faces[i].y];
+            Vector3 p2 = mesh.vertices[mesh.faces[i].z];
 
-                        Vector3 color = colorOfPixel(c0, c1, c2, barycentric);
+            // object to world
+            // logic in hw2_scenes.cpp
+            Matrix4x4 M = mesh.model_matrix; 
 
-                        // update the z_buffer
-                        z_buffer(x, y).z = z_depth;
-                        // update the pixel color
-                        img(x, y) = color;
+            // v' = PVMv 
+            /*
+            Vector4 tp0 = projection_matrix * V * model_matrix * Vector4{p0.x, p0.y, p0.z, 1.0};
+            Vector4 tp1 = projection_matrix * V * model_matrix * Vector4{p1.x, p1.y, p1.z, 1.0};
+            Vector4 tp2 = projection_matrix * V * model_matrix * Vector4{p2.x, p2.y, p2.z, 1.0};*/
+
+            /*std::cout << "p0: " << p0 << "\n";
+            std::cout << "p1: " << p1 << "\n";
+            std::cout << "p2: " << p2 << "\n";*/
+
+            Vector4 tt0 = V * M * Vector4{p0.x, p0.y, p0.z, Real(1.0)};
+            Vector4 tt1 = V * M * Vector4{p1.x, p1.y, p1.z, Real(1.0)};
+            Vector4 tt2 = V * M * Vector4{p2.x, p2.y, p2.z, Real(1.0)};
+
+            /*std::cout << "tt0: " << tt0 << "\n";
+            std::cout << "tt1: " << tt1 << "\n";
+            std::cout << "tt2: " << tt2 << "\n";*/
+
+            p0 = Vector3{tt0.x, tt0.y, tt0.z};
+            p1 = Vector3{tt1.x, tt1.y, tt1.z};
+            p2 = Vector3{tt2.x, tt2.y, tt2.z};
+            
+            /*
+            // define projected points (onto image plane)
+            Vector2 pp0{0,0};
+            pp0.x = -p0.x/p0.z;
+            pp0.y = -p0.y/p0.z;
+
+            Vector2 pp1{0,0};
+            pp1.x = -p1.x/p1.z;
+            pp1.y = -p1.y/p1.z;
+            
+            Vector2 pp2{0,0};
+            pp2.x = -p2.x/p2.z;
+            pp2.y = -p2.y/p2.z;
+
+            // convert projected points (in camera space) to image space
+            pp0.x = xcameraToImageSpace(pp0.x, img.width, s, a);
+            pp0.y = ycameraToImageSpace(pp0.y, img.height, s);
+
+            pp1.x = xcameraToImageSpace(pp1.x, img.width, s, a);
+            pp1.y = ycameraToImageSpace(pp1.y, img.height, s);
+
+            pp2.x = xcameraToImageSpace(pp2.x, img.width, s, a);
+            pp2.y = ycameraToImageSpace(pp2.y, img.height, s);*/
+
+            Vector4 wp0 = projection_matrix * view_matrix * tt0;
+            Vector4 wp1 = projection_matrix * view_matrix * tt1;
+            Vector4 wp2 = projection_matrix * view_matrix * tt2;
+
+            Vector2 pp0 = Vector2{wp0.x/wp0.w, wp0.y/wp0.w};
+            Vector2 pp1 = Vector2{wp1.x/wp1.w, wp1.y/wp1.w};
+            Vector2 pp2 = Vector2{wp2.x/wp2.w, wp2.y/wp2.w};
+
+            /*std::cout << "pp0: " << pp0 << "\n";
+            std::cout << "pp1: " << pp1 << "\n";
+            std::cout << "pp2: " << pp2 << "\n";*/
+
+            // now loop for each pixel in the image
+            // TODO: ONLY do this for pixels within the triangle bounding box to simplify complexity. This would be in image space.
+            for (int y = 0; y < img.height; y++) {
+                for (int x = 0; x < img.width; x++) {
+                    // if pixel center hits triangle
+                    if (pointInTriangle(pp0, pp1, pp2, x, y)) {
+                        
+                        barycentric_coordinates barycentric = convertToBarycentric(p0, p1, p2, pp0, pp1, pp2, x, y);
+
+                        Real z_depth = depthOfPixel(p0, p1, p2, barycentric);
+
+                        // if the depth of the pixel is less than the current depth in the z_buffer, update the z_buffer and the pixel color
+                        if (z_depth > z_buffer(x, y).z) {
+
+                            Vector3 c0 = mesh.vertex_colors[mesh.faces[i].x];
+                            Vector3 c1 = mesh.vertex_colors[mesh.faces[i].y];
+                            Vector3 c2 = mesh.vertex_colors[mesh.faces[i].z];
+
+                            Vector3 color = colorOfPixel(c0, c1, c2, barycentric);
+
+                            // update the z_buffer
+                            z_buffer(x, y).z = z_depth;
+                            // update the pixel color
+                            img(x, y) = color;
+                        }
                     }
                 }
             }
         }
-    }
 
+    }
     // Scale SSAA image down to return_image size (Apply SSAA)
     // for each pixel in the return image (non-SSAA scaled, smaller image)
     for (int y = 0; y < return_img.height; y++) {

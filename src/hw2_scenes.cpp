@@ -242,21 +242,67 @@ Matrix4x4 parse_transformation(const json &node) {
                 (*scale_it)[0], (*scale_it)[1], (*scale_it)[2]
             };
             // TODO (HW2.4): construct a scale matrix and composite with F
-            UNUSED(scale); // silence warning, feel free to remove it
+            
+            Matrix4x4 scale_matrix = Matrix4x4::identity();
+            scale_matrix(0,0) = scale.x; // x
+            scale_matrix(1,1) = scale.y; // y
+            scale_matrix(2,2) = scale.z; // z
+            //scale_matrix(3,3) = Real(1.0);
+
+            F = scale_matrix * F;
         } else if (auto rotate_it = it->find("rotate"); rotate_it != it->end()) {
             Real angle = (*rotate_it)[0];
             Vector3 axis = normalize(Vector3{
                 (*rotate_it)[1], (*rotate_it)[2], (*rotate_it)[3]
             });
             // TODO (HW2.4): construct a rotation matrix and composite with F
-            UNUSED(angle); // silence warning, feel free to remove it
-            UNUSED(axis); // silence warning, feel free to remove it
+
+            // angle
+            // axis
+
+            // we are rotating vector v about an axis a
+
+            // 1. project vector v to axis a
+            // v_c = (v dot a) * a
+
+            // rotated vector v' = 
+            // v' = v_c + cos(theta) * v_1 + sin(theta) * v_2
+
+            // convert angle to radians
+            Real angle_radians = angle * (M_PI / Real(180.0));
+
+            Matrix4x4 rotate_matrix = Matrix4x4::identity();
+            // row x column. (0th indicies)
+            rotate_matrix(0,0) = axis.x * axis.x + (1 - axis.x * axis.x) * cos(angle_radians);
+            rotate_matrix(1,0) = axis.x * axis.y * (1 - cos(angle_radians)) + axis.z * sin(angle_radians);
+            rotate_matrix(2,0) = axis.x * axis.z * (1 - cos(angle_radians)) - axis.y * sin(angle_radians);
+            // 3,0 = 0
+
+            rotate_matrix(0,1) = axis.y * axis.x * (1 - cos(angle_radians)) - axis.z * sin(angle_radians);
+            rotate_matrix(1,1) = axis.y * axis.y + (1 - axis.y * axis.y) * cos(angle_radians);
+            rotate_matrix(2,1) = axis.y * axis.z * (1 - cos(angle_radians)) + axis.x * sin(angle_radians);
+            // 3,1 = 0
+
+            rotate_matrix(0,2) = axis.z * axis.x * (1 - cos(angle_radians)) + axis.y * sin(angle_radians);
+            rotate_matrix(1,2) = axis.z * axis.y * (1 - cos(angle_radians)) - axis.x * sin(angle_radians);
+            rotate_matrix(2,2) = axis.z * axis.z + (1 - axis.z * axis.z) * cos(angle_radians);
+            // 3,2 = 0
+
+            F = rotate_matrix * F;
         } else if (auto translate_it = it->find("translate"); translate_it != it->end()) {
             Vector3 translate = Vector3{
                 (*translate_it)[0], (*translate_it)[1], (*translate_it)[2]
             };
             // TODO (HW2.4): construct a translation matrix and composite with F
-            UNUSED(translate); // silence warning, feel free to remove it
+            
+            Matrix4x4 translate_matrix = Matrix4x4::identity();
+            // 0,0 origin indicies. row x column
+            translate_matrix(0,3) = translate.x; // x
+            translate_matrix(1,3) = translate.y; // y
+            translate_matrix(2,3) = translate.z; // z
+            //translate_matrix(3,3) = Real(1.0);
+
+            F = translate_matrix * F;
         } else if (auto lookat_it = it->find("lookat"); lookat_it != it->end()) {
             Vector3 position{0, 0, 0};
             Vector3 target{0, 0, -1};
@@ -280,6 +326,45 @@ Matrix4x4 parse_transformation(const json &node) {
                 });
             }
             // TODO (HW2.4): construct a lookat matrix and composite with F
+
+            // 2 3D points 
+            // 3D vector
+            //
+            // position: position of object p
+            // target: target the object is looking at t
+            // up: up vector u describes the orientation of the object
+
+            // where the camera should be facing (direction)
+            Vector3 d = normalize(target - position);
+
+            // right vector r
+            Vector3 r = normalize(cross(d, up));
+
+            // up vector u is not necessarily perpendicular to the camera direction d
+            // so we do not have an orthonormal basis yet. So recompute u.
+            // use the cross product between right vector and camera direction.
+            Vector3 up_p = cross(r, d);
+
+            Matrix4x4 lookat_matrix = Matrix4x4::identity();
+            // row x column. (0th indicies)
+            lookat_matrix(0,0) = r.x;
+            lookat_matrix(1,0) = r.y;
+            lookat_matrix(2,0) = r.z;
+            // 3,0 = 0
+            lookat_matrix(0,1) = up_p.x;
+            lookat_matrix(1,1) = up_p.y;
+            lookat_matrix(2,1) = up_p.z;
+            // 3,1 = 0
+            lookat_matrix(0,2) = -d.x;
+            lookat_matrix(1,2) = -d.y;
+            lookat_matrix(2,2) = -d.z;
+            // 3,2 = 0
+            lookat_matrix(0,3) = position.x;
+            lookat_matrix(1,3) = position.y;
+            lookat_matrix(2,3) = position.z;
+            // 3,3 = 1
+
+            F = lookat_matrix * F;
         }
     }
     return F;
