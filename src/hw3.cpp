@@ -19,13 +19,15 @@ void processInput(GLFWwindow* window) {
 
 void hw_3_1(const std::vector<std::string> &params) {
     // HW 3.1: Open a window using GLFW
-
+    
+    // GLFW
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); mac os 
 
+    // Create Application Window
     GLFWwindow* window = glfwCreateWindow(800, 600, "CSE 167 HW3", NULL, NULL);
     if (window == NULL)
     {
@@ -35,15 +37,17 @@ void hw_3_1(const std::vector<std::string> &params) {
     }
     glfwMakeContextCurrent(window);
 
-
+    // GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return;
     }
 
+    // Create Application Window Viewport Size
     glViewport(0, 0, 800, 600);
 
+    // Define Application Window Resize Callback (gets run on launch as well)
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // render loop
