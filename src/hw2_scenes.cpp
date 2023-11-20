@@ -3,6 +3,12 @@
 #include "3rdparty/tinyply.h"
 #include "flexception.h"
 #include <fstream>
+// CORRECTION ADDED FOR WINDOWS SYSTEMS.
+// this allows M_PI to be used on windows. macos includes it in xcode without ref.
+// this header is not present on macos.
+#ifdef _WIN32
+#include <corecrt_math_defines.h>
+#endif
 
 using json = nlohmann::json;
 
@@ -269,7 +275,7 @@ Matrix4x4 parse_transformation(const json &node) {
             // v' = v_c + cos(theta) * v_1 + sin(theta) * v_2
 
             // convert angle to radians
-            Real angle_radians = angle * (M_PI / Real(180.0));
+            Real angle_radians = angle * (M_PI / Real(180.0)); // macos xcode math.h
 
             Matrix4x4 rotate_matrix = Matrix4x4::identity();
             // row x column. (0th indicies)
