@@ -10,6 +10,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+void processInput(GLFWwindow* window) {
+    // returns whether this key is currently being pressed.
+    // no = GLFW_RELEASE, yes = GLFW_PRESS
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true); // breaks main render loop, due to condition.
+}
+
 void hw_3_1(const std::vector<std::string> &params) {
     // HW 3.1: Open a window using GLFW
 
@@ -40,7 +47,16 @@ void hw_3_1(const std::vector<std::string> &params) {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // render loop
+    // An iteration of the render loop is more commonly called a frame
     while (!glfwWindowShouldClose(window)) {
+        processInput(window); // user input
+
+        // rendering commands here
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
+        glClear(GL_COLOR_BUFFER_BIT); // state-using function
+
+        // check and call events and swap the buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
